@@ -1,0 +1,162 @@
+
+  gcloud auth application-default login
+
+
+# This configuration assumes you have already set up your Application Default Credentials (ADC) by running gcloud auth application-default login on your local machine. Terraform automatically uses these credentials for authentication.
+
+Option 1: Configure the provider block manually
+Add the following provider blocks to your main.tf file to explicitly configure them. Replace "YOUR_GCP_PROJECT_ID" with the project ID you defined in your module "project" resource. 
+terraform
+# main.tf
+
+provider "google" {
+  project = "gke-project-demo-001"
+}
+
+provider "google-beta" {
+  project = "gke-project-demo-001"
+}
+
+# ... all your other resources
+Use code with caution.
+
+This configuration assumes you have already set up your Application Default Credentials (ADC) by running gcloud auth application-default login on your local machine. Terraform automatically uses these credentials for authentication. 
+# ... YOU CAN DO LATER Option 2: Use service account impersonation (recommended) YOUR_SERVICE_ACCOUNT_EMAIL
+For more robust authentication, especially in production environments, you can use service account impersonation. This approach does not rely on local credentials and ensures all Terraform operations are performed with the permissions of a dedicated service account. 
+Add the provider blocks with the impersonation argument to your main.tf file:
+terraform
+# main.tf
+
+provider "google" {
+  project = "gke-project-demo-001"
+  impersonate_service_account = "YOUR_SERVICE_ACCOUNT_EMAIL"
+}
+
+provider "google-beta" {
+  project = "gke-project-demo-001"
+  impersonate_service_account = "YOUR_SERVICE_ACCOUNT_EMAIL"
+}
+
+
+
+
+# ###################   CREATING SErvice account For the project ############
+
+gcloud iam service-accounts create SERVICE_ACCOUNT_NAME \
+    --description="A descriptive name for the service account" \
+    --display-name="A human-readable name for the service account" \
+    --project=YOUR_GCP_PROJECT_ID
+
+
+    Assign roles to the service account
+
+gcloud projects add-iam-policy-binding YOUR_GCP_PROJECT_ID \
+    --member="serviceAccount:SERVICE_ACCOUNT_NAME@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com" \
+    --role="ROLE_NAME"
+
+
+
+gcloud iam service-accounts create gh-actions-sa \
+    --description="Service account for GitHub Actions" \
+    --display-name="GitHub Actions Service Account" \
+    --project=gke-project-demo-001
+
+gcloud projects add-iam-policy-binding gke-project-demo-001 \
+    --member="serviceAccount:gh-actions-sa@gke-project-demo-001.iam.gserviceaccount.com" \
+    --role="roles/container.admin"
+
+gcloud projects add-iam-policy-binding gke-project-demo-001 \
+    --member="serviceAccount:gh-actions-sa@gke-project-demo-001.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountTokenCreator"
+
+sh
+#!/bin/bash
+
+# Define variables
+SERVICE_ACCOUNT_NAME="gh-actions-sa"
+PROJECT_ID="gke-project-demo-001"
+ROLES=(
+    "roles/container.admin"
+    "roles/iam.serviceAccountTokenCreator"
+    "roles/storage.admin"
+)
+
+# Loop through each role and assign it to the service account
+for ROLE in "${ROLES[@]}"; do
+    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+        --member="serviceAccount:$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+        --role="$ROLE"
+done
+ 
+
+
+# For a Workload Identity Federation (WIF) setup, you must grant the roles/iam.workloadIdentityUser role to the federated identity. The roles/iam.serviceAccountTokenCreator role, while necessary for traditional service account impersonation (e.g., from a gcloud user), is not what you grant to the external identity from GitHub. 
+Here is a breakdown of why and how this works:
+# The role of roles/iam.workloadIdentityUser
+When you use WIF, you create a trust relationship where an external identity (like the GitHub Actions runner) is authorized to use a Google Cloud service account. The roles/iam.workloadIdentityUser role is the specific permission that enables this. 
+You grant this role directly to the federated identity, not the roles/iam.serviceAccountTokenCreator role.. 
+Summary of required roles
+# The necessary roles for your WIF setup are:
+  
+  * roles/iam.workloadIdentityUser: 
+      You grant this role to the GitHub Actions identity, which allows it to impersonate the service account  you created. This is configured through a specific IAM binding for your WIF pool and provider.
+  
+  * roles/container.admin: 
+      You grant this role to the service account itself. This gives the service account the authority to manage GKE clusters, as defined in your Terraform code.
+  
+  * roles/storage.admin: 
+      You grant this role to the service account itself, allowing it to manage the GCS bucket for remote state.
+  
+  * roles/iam.serviceAccountTokenCreator: 
+      You would grant this to a human user who needs to impersonate a service account using gcloud. In a WIF setup, you do not grant this role to the GitHub identity. 
+
+# How to grant roles/iam.workloadIdentityUser
+This is done with an iam-policy-binding on the service account, where the member is the federated identity from GitHub. 
+Example IAM binding via gcloud
+sh
+gcloud iam service-accounts add-iam-policy-binding gh-actions-sa@gke-project-demo-001.iam.gserviceaccount.com \
+    --role="roles/iam.workloadIdentityUser" \
+    --member="principal://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/YOUR_POOL_ID/subject/repo:YOUR_ORG/YOUR_REPO:ref:refs/heads/main"
+Use code with caution.
+
+Important: The --member value must be specifically configured for your setup and must match the Workload Identity Provider you create.
+Example IAM binding via Terraform
+
+# If you prefer to manage this via Terraform, you would add an google_service_account_iam_member resource: 
+terraform
+resource "google_service_account_iam_member" "wi_user" {
+  service_account_id = "projects/gke-project-demo-001/serviceAccounts/gh-actions-sa@gke-project-demo-001.iam.gserviceaccount.com"
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/*"
+}
+Use code with caution.
+
+
+# Debugging in terraform
+
+data "google_storage_bucket" "existing_bucket" {
+  name = "my-preexisting-bucket-name"
+}
+
+output "bucket_attributes" {
+  value = data.google_storage_bucket.existing_bucket
+}
+$ terraform console
+> data.google_storage_bucket.existing_bucket.name
+-----
+export TF_LOG="TRACE"
+---------
+need to declare variable in root module
+To check for the bucket:
+terraform plan -var="use_existing_bucket=true" -var="bucket_name=my-preexisting-bucket-name"
+To create the bucket:
+terraform plan -var="use_existing_bucket=false" -var="bucket_name=my-new-bucket-name" 
+
+
+terraform init -backend-config="bucket=my-project-bucket"
+
+# Destroy only the GKE cluster, leave VPC intact
+terraform destroy -target=module.gke_cluster
+
+# For multiple clusters
+terraform destroy -target=module.gke_cluster_production -target=module.gke_cluster_staging
