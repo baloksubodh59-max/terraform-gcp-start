@@ -23,8 +23,9 @@ terraform {
 
 locals {
   environment_name = "production"
-  project_name     = "awesome-bussiness"
-  billing_id       = "0162C8-66BEB4-31C1E6"
+
+  project_name = "awesome-bussiness"
+  billing_id   = "0162C8-66BEB4-31C1E6"
 }
 
 
