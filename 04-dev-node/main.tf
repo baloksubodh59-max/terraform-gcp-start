@@ -1,10 +1,10 @@
 terraform {
 
   # Comment backend "gcs" At First Time. see Readme
-  # uncomment after creating bucket 
+  # change "02-backend-clone/state" to "04-dev-node/state"
   backend "gcs" {
     bucket = "awesome-bussiness-tf-state"
-    prefix = "04-dev-node/state"
+    prefix = "02-backend-clone/state"
   }
 
   required_providers {

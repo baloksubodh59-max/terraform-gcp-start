@@ -1,7 +1,7 @@
 terraform {
 
   # Comment backend "gcs" At First Time. see Readme
-  # uncomment after creating bucket 
+  # change "02-backend-clone/state" to "06-production-nodestate"
   backend "gcs" {
     bucket = "awesome-bussiness-tf-state"
     prefix = "06-production-node/state"
