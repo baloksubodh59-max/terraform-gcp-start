@@ -4,7 +4,7 @@ terraform {
   # uncomment after creating bucket 
   backend "gcs" {
     bucket = "gke-bolod-devops-cherry-tf-state"
-    prefix = "04-staging-node/state"
+    prefix = "05-staging-node/state"
   }
 
   required_providers {
