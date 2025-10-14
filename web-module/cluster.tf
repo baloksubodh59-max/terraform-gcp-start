@@ -47,6 +47,6 @@ module "gke_cluster" {
     }
   ]
   remove_default_node_pool = true
-  deletion_protection      = false
+  deletion_protection      = false # must be "true" to protect from deletion of this cluster
 
 }

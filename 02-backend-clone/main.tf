@@ -1,11 +1,12 @@
 terraform {
 
-
-  # Comment backend "gcs" At First Time. see Readme
-  # uncomment after creating bucket 
+  # 1. First "initial/state" and do not change the state and terraform init
+  # 2. Then change to "02-backend-clone/state" and terraform init -migrate-state  to upload a clone of initial state
+  # 3. Use "02-backend-clone/state" as cloneable for a new fresh project state to create other resources like clustering, dns whatever... 
   backend "gcs" {
-    bucket = "gke-bolod-devops-cherry-tf-state"
+    bucket = "awesome-bussiness-tf-state"
     prefix = "02-backend-clone/state"
+
   }
 
   required_providers {
