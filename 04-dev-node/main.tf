@@ -1,10 +1,10 @@
 terraform {
 
   # Comment backend "gcs" At First Time. see Readme
-  # change "02-backend-clone/state" to "04-dev-node/state"
+  # clone "02-backend-clone/state" to "04-dev-node/state"
   backend "gcs" {
     bucket = "awesome-bussiness-tf-state"
-    prefix = "02-backend-clone/state"
+    prefix = "04-dev-node/state"
   }
 
   required_providers {
@@ -45,9 +45,9 @@ module "web-default" {
   gcp_billing_id = local.billing_id
 
   # cluster environment
-  # environment_name   = local.environment_name
-  # machine_type       = "e2-standard-2"
-  # initial_node_count = 1
+  environment_name   = local.environment_name
+  machine_type       = "e2-standard-2"
+  initial_node_count = 1
 
 }
 

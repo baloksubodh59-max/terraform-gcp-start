@@ -3,7 +3,6 @@ module "vpc" {
   source  = "terraform-google-modules/network/google"
   version = "~> 12.0.0"
 
-  count = 0
 
   project_id   = var.gcp_project_id
   network_name = "shared-${var.gcp_project_id}-network" # Fixed name, not cluster-specific
