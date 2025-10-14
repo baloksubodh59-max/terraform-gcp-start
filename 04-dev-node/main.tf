@@ -3,7 +3,7 @@ terraform {
   # Comment backend "gcs" At First Time. see Readme
   # uncomment after creating bucket 
   backend "gcs" {
-    bucket = "gke-bolod-devops-cherry-tf-state"
+    bucket = "awesome-bussiness-tf-state"
     prefix = "04-dev-node/state"
   }
 
