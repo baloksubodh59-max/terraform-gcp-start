@@ -38,7 +38,7 @@ module "web-default" {
   gcp_project_id   = "${local.project_name}-devops"
 
   # bucket config
-  bucket_prefix = "apple_meets_cherry" # should not be project id 
+  bucket_prefix = "apple_meets_cherry"
   bucket_name   = "${local.project_name}-tf-state"
 
   # billing id

@@ -160,3 +160,18 @@ terraform destroy -target=module.gke_cluster
 
 # For multiple clusters
 terraform destroy -target=module.gke_cluster_production -target=module.gke_cluster_staging
+
+
+ terraform state show 'module.web-default.module.gke_cluster[0].google_container_cluster.primary'
+
+# check before destroy 
+  DONT USE IT ******** Do comment out for best output of destroying
+  Note:  that the -target option is not suitable for routine use, and is provided only for exceptional situations such as recovering from errors or mistakes, or when Terraform specifically
+│       suggests to use it as part of an error message.
+ terraform plan -destroy -target='module.web-default.module.gke_cluster'
+ terraform plan -destroy -target='module.web-default.module.gke_cluster[index]' if multiple clusters exist
+
+or by commenting out the module you want to destroy
+
+
+gcloud container clusters get-credentials ${CLUSTER_NAME} --zone ${GCP_ZONE}
