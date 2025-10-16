@@ -34,10 +34,12 @@ module "gke_cluster" {
   ip_range_services = "${local.environment_name}-services"
 
   enable_private_nodes    = true
-  enable_private_endpoint = true
+  enable_private_endpoint = false # # Disable private endpoint and add my ip to connect through gcloud.
   master_ipv4_cidr_block  = lookup(local.master_cidr_blocks, local.environment_name, "172.16.0.0/28")
 
   gateway_api_channel = "CHANNEL_STANDARD"
+  configure_ip_masq   = false
+
 
   node_pools = [
     {
@@ -46,7 +48,13 @@ module "gke_cluster" {
       initial_node_count = var.initial_node_count # Fewer nodes for staging,dev
     }
   ]
+
   remove_default_node_pool = true
   deletion_protection      = false # must be "true" to protect from deletion of this cluster
 
+  depends_on = [
+    module.vpc,
+    module.cloud_nat
+  ]
 }
+
