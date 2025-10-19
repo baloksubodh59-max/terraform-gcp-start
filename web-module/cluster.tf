@@ -2,6 +2,7 @@
 locals {
 
   environment_name = var.environment_name
+  project_id       = var.gcp_project_id
 
   allowed_environment_types = ["dev", "staging", "production"]
 
