@@ -2,6 +2,7 @@
 locals {
 
   environment_name = var.environment_name
+  project_id       = var.gcp_project_id
 
   allowed_environment_types = ["dev", "staging", "production"]
 
@@ -21,8 +22,8 @@ module "gke_cluster" {
   count = contains(local.allowed_environment_types, local.environment_name) ? 1 : 0
 
 
-  project_id = var.gcp_project_id
-  name       = "${local.environment_name}-cluster"
+  project_id = local.project_id
+  name       = "${local.project_id}-${local.environment_name}-cluster"
   regional   = false
   region     = var.gcp_region
   zones      = [var.gcp_zone]
